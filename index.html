@@ -8,11 +8,18 @@
     .banner { background-color: #003366; color: white; padding: 20px; text-align: center; }
     .logo-placeholder { background: #fff; color: #003366; padding: 10px 20px; display: inline-block; font-weight: bold; border-radius: 5px; margin-bottom: 10px; }
     .container { max-width: 600px; margin: 20px auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-    input { width: 100%; padding: 10px; margin: 10px 0; box-sizing: border-box; }
-    button { background: #28a745; color: white; border: none; padding: 10px 20px; cursor: pointer; border-radius: 5px; width: 100%; font-size: 16px; }
+    input { width: 100%; padding: 10px; margin: 10px 0; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+    input[readonly] { background-color: #e9ecef; cursor: not-allowed; }
+    
+    .row-datas { display: flex; gap: 15px; }
+    .row-datas div { flex: 1; }
+
+    button { background: #28a745; color: white; border: none; padding: 12px 20px; cursor: pointer; border-radius: 5px; width: 100%; font-size: 16px; font-weight: bold; }
     button.btn-nav { background: #007bff; margin-top: 10px; }
+    button:hover { opacity: 0.9; }
+    
     .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); }
-    .modal-content { background: white; margin: 15% auto; padding: 20px; width: 300px; border-radius: 8px; text-align: center; }
+    .modal-content { background: white; margin: 15% auto; padding: 20px; width: 320px; border-radius: 8px; text-align: center; }
     .modal-content button { width: 45%; display: inline-block; margin: 5px; }
     .btn-cancel { background: #dc3545; }
   </style>
@@ -26,22 +33,31 @@
 
   <div class="container">
     <form id="formNF">
-      <label>Período (Ex: 08/03/2026 ATÉ 14/03/2026):</label>
-      <input type="text" id="periodo" required>
+      
+      <div class="row-datas">
+        <div>
+          <label>Data Início:</label>
+          <input type="date" id="dataInicio" class="pula-enter" required>
+        </div>
+        <div>
+          <label>Data Fim:</label>
+          <input type="date" id="dataFim" class="pula-enter" required>
+        </div>
+      </div>
       
       <label>Quantidade de NF:</label>
-      <input type="number" id="quant" required>
+      <input type="number" id="quant" class="pula-enter" required>
       
       <label>Valor Bruto (R$):</label>
-      <input type="text" id="bruto" required>
+      <input type="number" id="bruto" class="pula-enter" step="0.01" required>
       
-      <label>Valor c/ Desconto (R$):</label>
-      <input type="text" id="desconto" required>
+      <label>Valor c/ Desconto de 11% (R$):</label>
+      <input type="number" id="desconto" step="0.01" readonly required>
       
       <label>Vencimento:</label>
-      <input type="date" id="vencimento" required>
+      <input type="date" id="vencimento" class="pula-enter" required>
       
-      <button type="button" onclick="abrirRevisao()">Revisar e Salvar</button>
+      <button type="button" class="pula-enter" onclick="abrirRevisao()">Revisar e Salvar</button>
       <button type="button" class="btn-nav" onclick="window.location.href='consulta.html'">Ir para Consulta</button>
     </form>
   </div>
@@ -49,27 +65,78 @@
   <div id="modalRevisao" class="modal">
     <div class="modal-content">
       <h3>Revisar Dados</h3>
-      <div id="dadosRevisao" style="text-align: left; margin-bottom: 15px; font-size: 14px;"></div>
+      <div id="dadosRevisao" style="text-align: left; margin-bottom: 15px; font-size: 14px; line-height: 1.5;"></div>
       <button class="btn-cancel" onclick="fecharRevisao()">Corrigir</button>
       <button onclick="salvarDados()">Confirmar</button>
     </div>
   </div>
 
   <script>
-    // AQUI ESTÁ O SEU LINK DO APPS SCRIPT
+    // SEU LINK DO APPS SCRIPT
     const urlAppScript = 'https://script.google.com/macros/s/AKfycbwNC2oTlfG_Ww4BY72JY7eovwsCYNLyWUX8HnGU6J8fEg4GWYKFqPnPbSy9460XnkNx/exec';
 
+    // 1. CÁLCULO AUTOMÁTICO DE 11% DE DESCONTO
+    document.getElementById('bruto').addEventListener('input', function() {
+      let valorBruto = parseFloat(this.value);
+      if (!isNaN(valorBruto)) {
+        // Calcula 11% a menos (multiplica por 0.89)
+        let valorComDesconto = valorBruto * 0.89;
+        // Fixa em 2 casas decimais
+        document.getElementById('desconto').value = valorComDesconto.toFixed(2);
+      } else {
+        document.getElementById('desconto').value = '';
+      }
+    });
+
+    // 2. NAVEGAÇÃO COM O ENTER
+    const inputsEnter = document.querySelectorAll('.pula-enter');
+    inputsEnter.forEach((element, index) => {
+      element.addEventListener('keydown', function(event) {
+        if (event.key === 'Enter') {
+          event.preventDefault(); // Evita que o formulário recarregue a página
+          if (index < inputsEnter.length - 1) {
+            inputsEnter[index + 1].focus(); // Pula pro próximo
+          } else {
+            abrirRevisao(); // Se for o último (botão), abre a revisão
+          }
+        }
+      });
+    });
+
+    // Função auxiliar para formatar a data de AAAA-MM-DD para DD/MM/AAAA
+    function formatarDataBR(dataString) {
+      if(!dataString) return "";
+      const partes = dataString.split('-');
+      return `${partes[2]}/${partes[1]}/${partes[0]}`;
+    }
+
+    // Variável global para guardar o período gerado
+    let periodoFormatado = "";
+
     function abrirRevisao() {
-      let p = document.getElementById('periodo').value;
+      let dtInicio = document.getElementById('dataInicio').value;
+      let dtFim = document.getElementById('dataFim').value;
       let q = document.getElementById('quant').value;
       let b = document.getElementById('bruto').value;
       let d = document.getElementById('desconto').value;
       let v = document.getElementById('vencimento').value;
 
-      if(!p || !q || !b || !d || !v) { alert("Preencha todos os campos!"); return; }
+      if(!dtInicio || !dtFim || !q || !b || !d || !v) { 
+        alert("Preencha todos os campos!"); 
+        return; 
+      }
+
+      // Monta o texto do período
+      periodoFormatado = `${formatarDataBR(dtInicio)} ATÉ ${formatarDataBR(dtFim)}`;
+      let vencimentoBR = formatarDataBR(v);
 
       document.getElementById('dadosRevisao').innerHTML = 
-        `<b>Período:</b> ${p}<br><b>Quant:</b> ${q}<br><b>Bruto:</b> R$ ${b}<br><b>Desconto:</b> R$ ${d}<br><b>Vencimento:</b> ${v}`;
+        `<b>Período:</b> ${periodoFormatado}<br>
+         <b>Quant:</b> ${q}<br>
+         <b>Bruto:</b> R$ ${parseFloat(b).toFixed(2).replace('.', ',')}<br>
+         <b>Desconto (11%):</b> R$ ${parseFloat(d).toFixed(2).replace('.', ',')}<br>
+         <b>Vencimento:</b> ${vencimentoBR}`;
+      
       document.getElementById('modalRevisao').style.display = 'block';
     }
 
@@ -78,15 +145,14 @@
     }
 
     function salvarDados() {
-      let p = encodeURIComponent(document.getElementById('periodo').value);
+      let p = encodeURIComponent(periodoFormatado);
       let q = encodeURIComponent(document.getElementById('quant').value);
-      let b = encodeURIComponent(document.getElementById('bruto').value);
-      let d = encodeURIComponent(document.getElementById('desconto').value);
-      let v = encodeURIComponent(document.getElementById('vencimento').value);
+      let b = encodeURIComponent(document.getElementById('bruto').value.replace('.', ',')); // Salva com vírgula para o Sheets
+      let d = encodeURIComponent(document.getElementById('desconto').value.replace('.', ','));
+      let v = encodeURIComponent(formatarDataBR(document.getElementById('vencimento').value));
 
       document.getElementById('modalRevisao').innerHTML = "<div class='modal-content'>Salvando no sistema...</div>";
 
-      // Envia os dados para o Google Sheets
       const urlFinal = `${urlAppScript}?action=salvar&periodo=${p}&quant=${q}&bruto=${b}&desconto=${d}&vencimento=${v}`;
 
       fetch(urlFinal)
@@ -96,8 +162,9 @@
             alert("Lançamento salvo com sucesso!");
             document.getElementById('formNF').reset();
             fecharRevisao();
-            // Restaura o HTML do modal para o próximo uso
-            document.getElementById('modalRevisao').innerHTML = `<div class="modal-content"><h3>Revisar Dados</h3><div id="dadosRevisao" style="text-align: left; margin-bottom: 15px; font-size: 14px;"></div><button class="btn-cancel" onclick="fecharRevisao()">Corrigir</button><button onclick="salvarDados()">Confirmar</button></div>`;
+            // Restaura o HTML do modal
+            document.getElementById('modalRevisao').innerHTML = `<div class="modal-content"><h3>Revisar Dados</h3><div id="dadosRevisao" style="text-align: left; margin-bottom: 15px; font-size: 14px; line-height: 1.5;"></div><button class="btn-cancel" onclick="fecharRevisao()">Corrigir</button><button onclick="salvarDados()">Confirmar</button></div>`;
+            document.getElementById('dataInicio').focus(); // Volta o foco pro primeiro campo
           }
         })
         .catch(error => alert("Erro ao salvar: " + error));
