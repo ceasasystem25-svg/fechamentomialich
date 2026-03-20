@@ -1,13 +1,14 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <base target="_top">
+  <meta charset="UTF-8">
+  <title>Consulta de NFs</title>
   <style>
     body { font-family: Arial, sans-serif; margin: 0; background: #f4f4f9; }
     .banner { background-color: #003366; color: white; padding: 20px; text-align: center; }
     .logo-placeholder { background: #fff; color: #003366; padding: 10px 20px; display: inline-block; font-weight: bold; border-radius: 5px; margin-bottom: 10px; }
     .container { max-width: 900px; margin: 20px auto; background: white; padding: 20px; border-radius: 8px; }
-    input { padding: 10px; width: 70%; }
+    input { padding: 10px; width: 65%; }
     button { background: #007bff; color: white; border: none; padding: 10px 15px; cursor: pointer; border-radius: 5px; }
     table { width: 100%; border-collapse: collapse; margin-top: 20px; }
     th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
@@ -23,7 +24,7 @@
   </div>
 
   <div class="container">
-    <button onclick="window.top.location.href='<?= urlServico ?>?page=Index'" style="margin-bottom:15px; background:#6c757d;">&larr; Voltar para Lançamento</button>
+    <button onclick="window.location.href='index.html'" style="margin-bottom:15px; background:#6c757d;">&larr; Voltar para Lançamento</button>
     
     <div style="margin-bottom: 20px;">
       <input type="text" id="termoBusca" placeholder="Digite o período para buscar (Ex: 08/03/2026)">
@@ -31,20 +32,26 @@
       <button onclick="carregarDados()" style="background:#28a745;">Ver Todos</button>
     </div>
 
-    <div id="tabelaContainer">Carregando dados...</div>
+    <div id="tabelaContainer">Conectando ao banco de dados...</div>
   </div>
 
   <script>
+    // AQUI ESTÁ O SEU LINK DO APPS SCRIPT
+    const urlAppScript = 'https://script.google.com/macros/s/AKfycbwNC2oTlfG_Ww4BY72JY7eovwsCYNLyWUX8HnGU6J8fEg4GWYKFqPnPbSy9460XnkNx/exec';
     let dadosGlobais = [];
 
     function carregarDados() {
-      document.getElementById('tabelaContainer').innerHTML = "Carregando...";
-      google.script.run.withSuccessHandler(montarTabela).buscarRegistros();
-    }
-
-    function montarTabela(dados) {
-      dadosGlobais = dados;
-      renderizarHTML(dados);
+      document.getElementById('tabelaContainer').innerHTML = "Buscando dados no Google Sheets...";
+      
+      fetch(urlAppScript + "?action=buscar")
+        .then(response => response.json())
+        .then(dados => {
+          dadosGlobais = dados;
+          renderizarHTML(dados);
+        })
+        .catch(error => {
+          document.getElementById('tabelaContainer').innerHTML = "Erro ao carregar dados: " + error;
+        });
     }
 
     function renderizarHTML(dados) {
@@ -54,7 +61,6 @@
       }
       let html = "<table><tr><th>Período</th><th>Quant. NF</th><th>Bruto</th><th>C/ Desconto</th><th>Vencimento</th><th>Ação</th></tr>";
       dados.forEach(row => {
-        // row[0] é o ID oculto
         html += `<tr>
                   <td>${row[1]}</td>
                   <td>${row[2]}</td>
@@ -76,8 +82,15 @@
 
     function apagar(id) {
       if(confirm("Tem certeza que deseja apagar este registro?")) {
-        document.getElementById('tabelaContainer').innerHTML = "Apagando...";
-        google.script.run.withSuccessHandler(carregarDados).deletarRegistro(id);
+        document.getElementById('tabelaContainer').innerHTML = "Apagando registro...";
+        
+        fetch(`${urlAppScript}?action=deletar&id=${id}`)
+          .then(response => response.json())
+          .then(data => {
+            if(data.status === 'sucesso') {
+              carregarDados(); // Recarrega a tabela atualizada
+            }
+          });
       }
     }
   </script>
