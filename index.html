@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; background: #f4f4f9; }
+    .banner { background-color: #003366; color: white; padding: 20px; text-align: center; }
+    .logo-placeholder { background: #fff; color: #003366; padding: 10px 20px; display: inline-block; font-weight: bold; border-radius: 5px; margin-bottom: 10px; }
+    .container { max-width: 600px; margin: 20px auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    input { width: 100%; padding: 10px; margin: 10px 0; box-sizing: border-box; }
+    button { background: #28a745; color: white; border: none; padding: 10px 20px; cursor: pointer; border-radius: 5px; width: 100%; font-size: 16px; }
+    button.btn-nav { background: #007bff; margin-top: 10px; }
+    
+    /* Estilo do Pop-up (Modal) */
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); }
+    .modal-content { background: white; margin: 15% auto; padding: 20px; width: 300px; border-radius: 8px; text-align: center; }
+    .modal-content button { width: 45%; display: inline-block; margin: 5px; }
+    .btn-cancel { background: #dc3545; }
+  </style>
+</head>
+<body>
+
+  <div class="banner">
+    <div class="logo-placeholder">[ SEU LOGOTIPO AQUI ]</div>
+    <h2>Lançamento de Fechamento de NFs</h2>
+  </div>
+
+  <div class="container">
+    <form id="formNF">
+      <label>Período (Ex: 08/03/2026 ATÉ 14/03/2026):</label>
+      <input type="text" id="periodo" required>
+      
+      <label>Quantidade de NF:</label>
+      <input type="number" id="quant" required>
+      
+      <label>Valor Bruto (R$):</label>
+      <input type="text" id="bruto" required>
+      
+      <label>Valor c/ Desconto (R$):</label>
+      <input type="text" id="desconto" required>
+      
+      <label>Vencimento:</label>
+      <input type="date" id="vencimento" required>
+      
+      <button type="button" onclick="abrirRevisao()">Revisar e Salvar</button>
+      <button type="button" class="btn-nav" onclick="window.top.location.href='<?= urlServico ?>?page=Consulta'">Ir para Consulta</button>
+    </form>
+  </div>
+
+  <div id="modalRevisao" class="modal">
+    <div class="modal-content">
+      <h3>Revisar Dados</h3>
+      <div id="dadosRevisao" style="text-align: left; margin-bottom: 15px; font-size: 14px;"></div>
+      <button class="btn-cancel" onclick="fecharRevisao()">Corrigir</button>
+      <button onclick="salvarDados()">Confirmar</button>
+    </div>
+  </div>
+
+  <script>
+    function abrirRevisao() {
+      // Coleta dados
+      let p = document.getElementById('periodo').value;
+      let q = document.getElementById('quant').value;
+      let b = document.getElementById('bruto').value;
+      let d = document.getElementById('desconto').value;
+      let v = document.getElementById('vencimento').value;
+
+      if(!p || !q || !b || !d || !v) { alert("Preencha todos os campos!"); return; }
+
+      // Mostra no Modal
+      document.getElementById('dadosRevisao').innerHTML = 
+        `<b>Período:</b> ${p}<br><b>Quant:</b> ${q}<br><b>Bruto:</b> R$ ${b}<br><b>Desconto:</b> R$ ${d}<br><b>Vencimento:</b> ${v}`;
+      document.getElementById('modalRevisao').style.display = 'block';
+    }
+
+    function fecharRevisao() {
+      document.getElementById('modalRevisao').style.display = 'none';
+    }
+
+    function salvarDados() {
+      const dados = {
+        periodo: document.getElementById('periodo').value,
+        quant: document.getElementById('quant').value,
+        bruto: document.getElementById('bruto').value,
+        desconto: document.getElementById('desconto').value,
+        vencimento: document.getElementById('vencimento').value
+      };
+
+      document.getElementById('modalRevisao').innerHTML = "<div class='modal-content'>Salvando...</div>";
+
+      google.script.run.withSuccessHandler(function() {
+        alert("Lançamento salvo com sucesso!");
+        document.getElementById('formNF').reset();
+        fecharRevisao();
+        // Restaura botões do modal para o próximo uso
+        document.getElementById('modalRevisao').innerHTML = `<div class="modal-content"><h3>Revisar Dados</h3><div id="dadosRevisao" style="text-align: left; margin-bottom: 15px; font-size: 14px;"></div><button class="btn-cancel" onclick="fecharRevisao()">Corrigir</button><button onclick="salvarDados()">Confirmar</button></div>`;
+      }).salvarRegistro(dados);
+    }
+  </script>
+</body>
+</html>
