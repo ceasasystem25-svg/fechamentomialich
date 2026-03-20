@@ -5,8 +5,19 @@
   <title>Lançamento de NFs</title>
   <style>
     body { font-family: Arial, sans-serif; margin: 0; background: #f4f4f9; }
-    .banner { background-color: #003366; color: white; padding: 20px; text-align: center; }
-    .logo-placeholder { background: #fff; color: #003366; padding: 10px 20px; display: inline-block; font-weight: bold; border-radius: 5px; margin-bottom: 10px; }
+    
+    /* ESTILO DO BANNER ATUALIZADO */
+    .banner { 
+      background-color: #003366; 
+      background-image: url('meu-banner.jpg'); /* COLOQUE O NOME DO SEU BANNER AQUI */
+      background-size: cover; 
+      background-position: center; 
+      color: white; 
+      padding: 40px 20px; 
+      text-align: center; 
+      border-radius: 0 0 8px 8px;
+    }
+    
     .container { max-width: 600px; margin: 20px auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
     input { width: 100%; padding: 10px; margin: 10px 0; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
     input[readonly] { background-color: #e9ecef; cursor: not-allowed; }
@@ -27,7 +38,7 @@
 <body>
 
   <div class="banner">
-    <div class="logo-placeholder">[ SEU LOGOTIPO AQUI ]</div>
+    <img src="minha-logo.png" alt="Logotipo" style="max-height: 80px; margin-bottom: 10px;">
     <h2>Lançamento de Fechamento de NFs</h2>
   </div>
 
@@ -72,45 +83,40 @@
   </div>
 
   <script>
-    // SEU LINK DO APPS SCRIPT
-    const urlAppScript = 'https://script.google.com/macros/s/AKfycbzpodgnZpaQskl582gIxDOSipY_ASkmZLMM2RKWrsX3HrLAdQ8GIxaC05PlftMZriYk/exec';
+    const urlAppScript = 'https://script.google.com/macros/s/AKfycbwNC2oTlfG_Ww4BY72JY7eovwsCYNLyWUX8HnGU6J8fEg4GWYKFqPnPbSy9460XnkNx/exec';
 
-    // 1. CÁLCULO AUTOMÁTICO DE 11% DE DESCONTO
+    // Cálculo automático de 11%
     document.getElementById('bruto').addEventListener('input', function() {
       let valorBruto = parseFloat(this.value);
       if (!isNaN(valorBruto)) {
-        // Calcula 11% a menos (multiplica por 0.89)
-        let valorComDesconto = valorBruto * 0.89;
-        // Fixa em 2 casas decimais
+        let valorComDesconto = valorBruto * 0.89; // Desconto de 11%
         document.getElementById('desconto').value = valorComDesconto.toFixed(2);
       } else {
         document.getElementById('desconto').value = '';
       }
     });
 
-    // 2. NAVEGAÇÃO COM O ENTER
+    // Navegação com Enter
     const inputsEnter = document.querySelectorAll('.pula-enter');
     inputsEnter.forEach((element, index) => {
       element.addEventListener('keydown', function(event) {
         if (event.key === 'Enter') {
-          event.preventDefault(); // Evita que o formulário recarregue a página
+          event.preventDefault();
           if (index < inputsEnter.length - 1) {
-            inputsEnter[index + 1].focus(); // Pula pro próximo
+            inputsEnter[index + 1].focus();
           } else {
-            abrirRevisao(); // Se for o último (botão), abre a revisão
+            abrirRevisao();
           }
         }
       });
     });
 
-    // Função auxiliar para formatar a data de AAAA-MM-DD para DD/MM/AAAA
     function formatarDataBR(dataString) {
       if(!dataString) return "";
       const partes = dataString.split('-');
       return `${partes[2]}/${partes[1]}/${partes[0]}`;
     }
 
-    // Variável global para guardar o período gerado
     let periodoFormatado = "";
 
     function abrirRevisao() {
@@ -126,7 +132,6 @@
         return; 
       }
 
-      // Monta o texto do período
       periodoFormatado = `${formatarDataBR(dtInicio)} ATÉ ${formatarDataBR(dtFim)}`;
       let vencimentoBR = formatarDataBR(v);
 
@@ -147,7 +152,7 @@
     function salvarDados() {
       let p = encodeURIComponent(periodoFormatado);
       let q = encodeURIComponent(document.getElementById('quant').value);
-      let b = encodeURIComponent(document.getElementById('bruto').value.replace('.', ',')); // Salva com vírgula para o Sheets
+      let b = encodeURIComponent(document.getElementById('bruto').value.replace('.', ',')); 
       let d = encodeURIComponent(document.getElementById('desconto').value.replace('.', ','));
       let v = encodeURIComponent(formatarDataBR(document.getElementById('vencimento').value));
 
@@ -162,12 +167,14 @@
             alert("Lançamento salvo com sucesso!");
             document.getElementById('formNF').reset();
             fecharRevisao();
-            // Restaura o HTML do modal
             document.getElementById('modalRevisao').innerHTML = `<div class="modal-content"><h3>Revisar Dados</h3><div id="dadosRevisao" style="text-align: left; margin-bottom: 15px; font-size: 14px; line-height: 1.5;"></div><button class="btn-cancel" onclick="fecharRevisao()">Corrigir</button><button onclick="salvarDados()">Confirmar</button></div>`;
-            document.getElementById('dataInicio').focus(); // Volta o foco pro primeiro campo
+            document.getElementById('dataInicio').focus();
           }
         })
-        .catch(error => alert("Erro ao salvar: " + error));
+        .catch(error => {
+            alert("Erro ao salvar. Verifique se o Apps Script foi publicado como 'Nova Versão' e para 'Qualquer Pessoa'.");
+            fecharRevisao();
+        });
     }
   </script>
 </body>
