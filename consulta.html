@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; background: #f4f4f9; }
+    .banner { background-color: #003366; color: white; padding: 20px; text-align: center; }
+    .logo-placeholder { background: #fff; color: #003366; padding: 10px 20px; display: inline-block; font-weight: bold; border-radius: 5px; margin-bottom: 10px; }
+    .container { max-width: 900px; margin: 20px auto; background: white; padding: 20px; border-radius: 8px; }
+    input { padding: 10px; width: 70%; }
+    button { background: #007bff; color: white; border: none; padding: 10px 15px; cursor: pointer; border-radius: 5px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+    th { background-color: #003366; color: white; }
+    .btn-del { background: #dc3545; padding: 5px 10px; font-size: 12px; }
+  </style>
+</head>
+<body onload="carregarDados()">
+
+  <div class="banner">
+    <div class="logo-placeholder">[ SEU LOGOTIPO AQUI ]</div>
+    <h2>Consulta de Lançamentos</h2>
+  </div>
+
+  <div class="container">
+    <button onclick="window.top.location.href='<?= urlServico ?>?page=Index'" style="margin-bottom:15px; background:#6c757d;">&larr; Voltar para Lançamento</button>
+    
+    <div style="margin-bottom: 20px;">
+      <input type="text" id="termoBusca" placeholder="Digite o período para buscar (Ex: 08/03/2026)">
+      <button onclick="filtrarTabela()">Buscar</button>
+      <button onclick="carregarDados()" style="background:#28a745;">Ver Todos</button>
+    </div>
+
+    <div id="tabelaContainer">Carregando dados...</div>
+  </div>
+
+  <script>
+    let dadosGlobais = [];
+
+    function carregarDados() {
+      document.getElementById('tabelaContainer').innerHTML = "Carregando...";
+      google.script.run.withSuccessHandler(montarTabela).buscarRegistros();
+    }
+
+    function montarTabela(dados) {
+      dadosGlobais = dados;
+      renderizarHTML(dados);
+    }
+
+    function renderizarHTML(dados) {
+      if(dados.length === 0) {
+        document.getElementById('tabelaContainer').innerHTML = "<p>Nenhum registro encontrado.</p>";
+        return;
+      }
+      let html = "<table><tr><th>Período</th><th>Quant. NF</th><th>Bruto</th><th>C/ Desconto</th><th>Vencimento</th><th>Ação</th></tr>";
+      dados.forEach(row => {
+        // row[0] é o ID oculto
+        html += `<tr>
+                  <td>${row[1]}</td>
+                  <td>${row[2]}</td>
+                  <td>R$ ${row[3]}</td>
+                  <td>R$ ${row[4]}</td>
+                  <td>${row[5]}</td>
+                  <td><button class="btn-del" onclick="apagar('${row[0]}')">Apagar</button></td>
+                 </tr>`;
+      });
+      html += "</table>";
+      document.getElementById('tabelaContainer').innerHTML = html;
+    }
+
+    function filtrarTabela() {
+      const termo = document.getElementById('termoBusca').value.toLowerCase();
+      const dadosFiltrados = dadosGlobais.filter(row => row[1].toLowerCase().includes(termo));
+      renderizarHTML(dadosFiltrados);
+    }
+
+    function apagar(id) {
+      if(confirm("Tem certeza que deseja apagar este registro?")) {
+        document.getElementById('tabelaContainer').innerHTML = "Apagando...";
+        google.script.run.withSuccessHandler(carregarDados).deletarRegistro(id);
+      }
+    }
+  </script>
+</body>
+</html>
