@@ -6,10 +6,9 @@
   <style>
     body { font-family: Arial, sans-serif; margin: 0; background: #f4f4f9; }
     
-    /* ESTILO DO BANNER ATUALIZADO */
     .banner { 
       background-color: #003366; 
-      background-image: url('meu-banner.jpg'); /* COLOQUE O NOME DO SEU BANNER AQUI */
+      background-image: url('meu-banner.jpg'); /* COLOQUE SUA IMAGEM AQUI */
       background-size: cover; 
       background-position: center; 
       color: white; 
@@ -19,8 +18,8 @@
     }
     
     .container { max-width: 600px; margin: 20px auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-    input { width: 100%; padding: 10px; margin: 10px 0; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
-    input[readonly] { background-color: #e9ecef; cursor: not-allowed; }
+    input { width: 100%; padding: 10px; margin: 10px 0; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; font-size: 15px;}
+    input[readonly] { background-color: #e9ecef; cursor: not-allowed; font-weight: bold; color: #28a745; }
     
     .row-datas { display: flex; gap: 15px; }
     .row-datas div { flex: 1; }
@@ -60,10 +59,10 @@
       <input type="number" id="quant" class="pula-enter" required>
       
       <label>Valor Bruto (R$):</label>
-      <input type="number" id="bruto" class="pula-enter" step="0.01" required>
+      <input type="text" id="bruto" class="pula-enter" placeholder="0,00" required>
       
       <label>Valor c/ Desconto de 11% (R$):</label>
-      <input type="number" id="desconto" step="0.01" readonly required>
+      <input type="text" id="desconto" placeholder="0,00" readonly required>
       
       <label>Vencimento:</label>
       <input type="date" id="vencimento" class="pula-enter" required>
@@ -83,20 +82,31 @@
   </div>
 
   <script>
+    // SEU LINK DO APPS SCRIPT
     const urlAppScript = 'https://script.google.com/macros/s/AKfycbwNC2oTlfG_Ww4BY72JY7eovwsCYNLyWUX8HnGU6J8fEg4GWYKFqPnPbSy9460XnkNx/exec';
 
-    // Cálculo automático de 11%
-    document.getElementById('bruto').addEventListener('input', function() {
-      let valorBruto = parseFloat(this.value);
-      if (!isNaN(valorBruto)) {
-        let valorComDesconto = valorBruto * 0.89; // Desconto de 11%
-        document.getElementById('desconto').value = valorComDesconto.toFixed(2);
-      } else {
-        document.getElementById('desconto').value = '';
+    // 1. MÁSCARA DE MOEDA E CÁLCULO DE DESCONTO
+    document.getElementById('bruto').addEventListener('input', function(e) {
+      // Remove tudo que não é número
+      let valor = e.target.value.replace(/\D/g, "");
+      
+      if (valor === "") {
+        e.target.value = "";
+        document.getElementById('desconto').value = "";
+        return;
       }
+
+      // Formata o Valor Bruto (Ex: 28.490,25)
+      let numFloat = parseInt(valor, 10) / 100;
+      let valorFormatado = numFloat.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      e.target.value = valorFormatado;
+
+      // Calcula os 11% de desconto e formata o resultado
+      let valorComDesconto = numFloat * 0.89;
+      document.getElementById('desconto').value = valorComDesconto.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     });
 
-    // Navegação com Enter
+    // 2. NAVEGAÇÃO COM ENTER
     const inputsEnter = document.querySelectorAll('.pula-enter');
     inputsEnter.forEach((element, index) => {
       element.addEventListener('keydown', function(event) {
@@ -111,6 +121,7 @@
       });
     });
 
+    // Formatar data para o padrão BR
     function formatarDataBR(dataString) {
       if(!dataString) return "";
       const partes = dataString.split('-');
@@ -138,8 +149,8 @@
       document.getElementById('dadosRevisao').innerHTML = 
         `<b>Período:</b> ${periodoFormatado}<br>
          <b>Quant:</b> ${q}<br>
-         <b>Bruto:</b> R$ ${parseFloat(b).toFixed(2).replace('.', ',')}<br>
-         <b>Desconto (11%):</b> R$ ${parseFloat(d).toFixed(2).replace('.', ',')}<br>
+         <b>Bruto:</b> R$ ${b}<br>
+         <b>Desconto (11%):</b> R$ ${d}<br>
          <b>Vencimento:</b> ${vencimentoBR}`;
       
       document.getElementById('modalRevisao').style.display = 'block';
@@ -150,10 +161,11 @@
     }
 
     function salvarDados() {
+      // Pega os dados exatamente do jeito que estão escritos (já formatados!)
       let p = encodeURIComponent(periodoFormatado);
       let q = encodeURIComponent(document.getElementById('quant').value);
-      let b = encodeURIComponent(document.getElementById('bruto').value.replace('.', ',')); 
-      let d = encodeURIComponent(document.getElementById('desconto').value.replace('.', ','));
+      let b = encodeURIComponent(document.getElementById('bruto').value); 
+      let d = encodeURIComponent(document.getElementById('desconto').value);
       let v = encodeURIComponent(formatarDataBR(document.getElementById('vencimento').value));
 
       document.getElementById('modalRevisao').innerHTML = "<div class='modal-content'>Salvando no sistema...</div>";
